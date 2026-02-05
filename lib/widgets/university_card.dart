@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/university.dart';
 import '../screens/dlshsi_detail_screen.dart';
+import '../screens/cvsu_detail_screen.dart';
 
 class UniversityCard extends StatelessWidget {
   final University university;
@@ -111,7 +112,7 @@ class UniversityCard extends StatelessWidget {
                     height: 32,
                     child: ElevatedButton(
                       onPressed: () {
-                        // Navigate to DLSHSI detail screen if it's DLSHSI
+                        // Navigate to DLSHSI detail screen
                         if (university.name.contains('De La Salle Medical')) {
                           Navigator.push(
                             context,
@@ -119,7 +120,17 @@ class UniversityCard extends StatelessWidget {
                               builder: (context) => const DLSHSIDetailScreen(),
                             ),
                           );
-                        } else {
+                        } 
+                        // Navigate to CvSU detail screen
+                        else if (university.name.contains('Cavite State University')) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CvSUDetailScreen(),
+                            ),
+                          );
+                        } 
+                        else {
                           // For other universities, show a placeholder message
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
