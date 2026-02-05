@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/university.dart';
 import '../widgets/category_chip.dart';
 import '../widgets/university_card.dart';
+import 'search_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -59,6 +60,22 @@ class _HomeScreenState extends State<HomeScreen> {
       imageUrl: 'assets/images/dlshsi3.jpg',
     ),
   ];
+
+  void _onNavItemTapped(int index) {
+    if (index == 1) {
+      // Navigate to SearchScreen when Search is tapped
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const SearchScreen(),
+        ),
+      );
+    } else {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -152,33 +169,46 @@ class _HomeScreenState extends State<HomeScreen> {
       offset: const Offset(0, -25),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 5),
+        child: GestureDetector(
+          onTap: () {
+            // Navigate to SearchScreen when tapped
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SearchScreen(),
               ),
-            ],
-          ),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Search universities, courses...',
-              hintStyle: TextStyle(
-                color: Colors.grey[400],
-                fontSize: 14,
-              ),
-              prefixIcon: Icon(
-                Icons.search,
-                color: Colors.grey[400],
-              ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 15,
+            );
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: AbsorbPointer(
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search universities, courses...',
+                  hintStyle: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 14,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: Colors.grey[400],
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 15,
+                  ),
+                ),
               ),
             ),
           ),
@@ -320,11 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
               final isSelected = _selectedIndex == index;
               
               return InkWell(
-                onTap: () {
-                  setState(() {
-                    _selectedIndex = index;
-                  });
-                },
+                onTap: () => _onNavItemTapped(index),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
