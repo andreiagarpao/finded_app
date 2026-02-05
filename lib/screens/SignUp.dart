@@ -1,93 +1,277 @@
 import 'package:flutter/material.dart';
 import 'SignIn.dart';
 
-class SignUp extends StatelessWidget {
+class SignUp extends StatefulWidget {
   const SignUp({super.key});
 
   @override
+  State<SignUp> createState() => _SignUpState();
+}
+
+class _SignUpState extends State<SignUp> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF1A237E)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
+      backgroundColor: const Color(0xFF2C4A7C),
+      body: Stack(
+        children: [
+          // Image background
+          Container(
+            width: screenWidth,
+            height: screenHeight,
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/background.png'),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          
+          // Back button
+          SafeArea(
+            child: Positioned(
+              top: 10,
+              left: 10,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+                onPressed: () => Navigator.pop(context),
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+          
+          // Centered content
+          Center(
+            child: SingleChildScrollView(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Header text
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 40),
+                        child: Column(
+                          children: [
+                            Text(
+                              "FindEd Cavite",
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              "Create your account to get started",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w300,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      
+                      // White container
+                      _buildContentContainer(context),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 30),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 20),
-            const Text("FindEd Cavite",
-                style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A237E))),
-            const Text("Create an account to begin.",
-                style: TextStyle(color: Colors.grey, fontSize: 16)),
-            const SizedBox(height: 40),
+    );
+  }
 
-            _buildField("Full Name", Icons.person_outline),
-            _buildField("Email", Icons.email_outlined),
-            _buildField("Password", Icons.lock_outline, isPass: true),
-            _buildField("Confirm Password", Icons.lock_reset, isPass: true),
+  Widget _buildContentContainer(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.all(30),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Input Fields
+          _buildField("Full Name", Icons.person_outline),
+          const SizedBox(height: 12),
+          _buildField("Email", Icons.email_outlined),
+          const SizedBox(height: 12),
+          _buildField("Password", Icons.lock_outline, isPass: true),
+          const SizedBox(height: 12),
+          _buildField("Confirm Password", Icons.lock_reset, isPass: true),
 
-            const SizedBox(height: 30),
+          const SizedBox(height: 15),
 
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1A237E),
-                minimumSize: const Size(double.infinity, 60),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15)),
-                elevation: 4,
+          // Terms and Conditions
+          Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: Checkbox(
+                  value: true,
+                  onChanged: (value) {},
+                  activeColor: const Color(0xFF2C4A7C),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
               ),
-              child: const Text("Create Account",
-                  style: TextStyle(
-                      color: Color(0xFFFFD700),
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold)),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: RichText(
+                  text: const TextSpan(
+                    text: "I agree to the ",
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                    children: [
+                      TextSpan(
+                        text: "Terms & Conditions",
+                        style: TextStyle(
+                          color: Color(0xFF2C4A7C),
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
 
-            const SizedBox(height: 20),
-            Center(
-              child: TextButton(
-                onPressed: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const SignIn())),
-                child: const Text("Already have an account? Sign In",
+          const SizedBox(height: 20),
+
+          // Create Account Button
+          ElevatedButton(
+            onPressed: () {
+              // Handle sign up
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2C4A7C),
+              minimumSize: const Size(double.infinity, 50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: const Text(
+              "Create Account",
+              style: TextStyle(
+                color: Color(0xFFFFC107),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Sign In Link
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SignIn()),
+            ),
+            child: RichText(
+              text: const TextSpan(
+                text: "Already have an account? ",
+                style: TextStyle(color: Colors.grey, fontSize: 13),
+                children: [
+                  TextSpan(
+                    text: "Sign In",
                     style: TextStyle(
-                        color: Color(0xFF1A237E),
-                        fontWeight: FontWeight.bold)),
+                      color: Color(0xFF2C4A7C),
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildField(String hint, IconData icon, {bool isPass = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: TextField(
-        obscureText: isPass,
-        decoration: InputDecoration(
-          hintText: hint,
-          prefixIcon: Icon(icon, color: const Color(0xFF1A237E)),
-          filled: true,
-          fillColor: const Color(0xFFE3F2FD).withOpacity(0.5),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
-          ),
-          border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: BorderSide.none),
+    return TextField(
+      obscureText: isPass,
+      style: const TextStyle(fontSize: 15),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(
+          color: Color(0xFFB0BEC5),
+          fontSize: 15,
+          fontWeight: FontWeight.w400,
+        ),
+        prefixIcon: Icon(icon, color: const Color(0xFF2C4A7C), size: 22),
+        suffixIcon: isPass
+            ? const Icon(Icons.visibility_outlined, 
+                color: Color(0xFF2C4A7C), size: 22)
+            : null,
+        filled: true,
+        fillColor: const Color(0xFFECEFF1),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFFFC107), width: 2),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
         ),
       ),
     );
