@@ -3,6 +3,7 @@ import '../models/university.dart';
 import '../widgets/category_chip.dart';
 import '../widgets/university_card.dart';
 import 'search_screen.dart';
+import 'compare_univ.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -68,6 +69,14 @@ class _HomeScreenState extends State<HomeScreen> {
         context,
         MaterialPageRoute(
           builder: (context) => const SearchScreen(),
+        ),
+      );
+    } else if (index == 2) {
+      // Navigate to CompareUnivScreen when Compare is tapped
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const CompareUnivScreen(),
         ),
       );
     } else {
