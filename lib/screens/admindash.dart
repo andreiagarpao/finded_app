@@ -16,21 +16,7 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
-  late String _selectedSchool;
   final StudentInquiryService _service = StudentInquiryService();
-
-  // Available schools
-  final List<String> _schools = [
-    'All Schools',
-    'CVSU',
-    'DLSHSI',
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedSchool = widget.selectedSchool;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +26,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         backgroundColor: const Color(0xFF2C4A7C),
         elevation: 0,
         title: Text(
-          '$_selectedSchool Admin Dashboard',
+          '${widget.selectedSchool} Admin Dashboard',
           style: const TextStyle(
             color: Colors.white,
             fontSize: 20,
@@ -98,196 +84,178 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-Widget _buildInquiriesView() {
-  // DEBUG: Print service info
-  print('🎯 ========== ADMIN DASHBOARD BUILDING ==========');
-  print('🎯 Admin Dashboard - Service instance check:');
-  _service.debugPrintInstance();
-  
-  // Get filtered inquiries from service
-  final filteredInquiries = _service.getInquiriesBySchool(_selectedSchool);
-  final stats = _service.getStatistics(school: _selectedSchool);
+  Widget _buildInquiriesView() {
+    // DEBUG: Print service info
+    print('🎯 ========== ADMIN DASHBOARD BUILDING ==========');
+    print('🎯 Admin Dashboard - Service instance check:');
+    _service.debugPrintInstance();
+    
+    // Get filtered inquiries from service - ONLY for the selected school
+    final filteredInquiries = _service.getInquiriesBySchool(widget.selectedSchool);
+    final stats = _service.getStatistics(school: widget.selectedSchool);
 
-  print('📋 Displaying ${filteredInquiries.length} inquiries for $_selectedSchool');
-  print('🎯 ========== ADMIN DASHBOARD BUILD COMPLETE ==========');
+    print('📋 Displaying ${filteredInquiries.length} inquiries for ${widget.selectedSchool}');
+    print('🎯 ========== ADMIN DASHBOARD BUILD COMPLETE ==========');
 
-  return Column(
-    children: [
-      // ... rest of your existing code (keep everything the same)
-      // Stats Cards
-      Container(
-        color: const Color(0xFF2C4A7C),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        child: Column(
-          children: [
-            // School Selector
-            Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedSchool,
-                  isExpanded: true,
-                  icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF2C4A7C)),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2C4A7C),
+    return Column(
+      children: [
+        // Stats Cards (NO DROPDOWN)
+        Container(
+          color: const Color(0xFF2C4A7C),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          child: Column(
+            children: [
+              // School Name Display (NO DROPDOWN)
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 1,
                   ),
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      setState(() {
-                        _selectedSchool = newValue;
-                      });
-                    }
-                  },
-                  items: _schools.map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Row(
-                        children: [
-                          Icon(
-                            value == 'All Schools' 
-                              ? Icons.school 
-                              : Icons.location_city,
-                            size: 20,
-                            color: const Color(0xFF2C4A7C),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(value),
-                        ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.school,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      widget.selectedSchool,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  ],
                 ),
               ),
-            ),
 
-            // Stats Row
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    'Total',
-                    stats['total'].toString(),
-                    Icons.inbox,
-                    const Color(0xFFFFC107),
+              // Stats Row
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      'Total',
+                      stats['total'].toString(),
+                      Icons.inbox,
+                      const Color(0xFFFFC107),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    'Pending',
-                    stats['pending'].toString(),
-                    Icons.pending_outlined,
-                    Colors.orange,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      'Pending',
+                      stats['pending'].toString(),
+                      Icons.pending_outlined,
+                      Colors.orange,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    'Responded',
-                    stats['responded'].toString(),
-                    Icons.check_circle_outline,
-                    Colors.green,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      'Responded',
+                      stats['responded'].toString(),
+                      Icons.check_circle_outline,
+                      Colors.green,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
-      ),
 
-      // Inquiries List Header
-      Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Recent Inquiries',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2C4A7C),
+        // Inquiries List Header
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Recent Inquiries',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2C4A7C),
+                    ),
                   ),
-                ),
-                if (_selectedSchool != 'All Schools')
                   Text(
-                    'Showing $_selectedSchool only',
+                    'Showing ${widget.selectedSchool} only',
                     style: const TextStyle(
                       fontSize: 12,
                       color: Colors.grey,
                     ),
                   ),
-              ],
-            ),
-            TextButton.icon(
-              onPressed: () {
-                // Refresh the list
-                setState(() {});
-              },
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Refresh'),
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF2C4A7C),
+                ],
               ),
-            ),
-          ],
-        ),
-      ),
-
-      // Inquiries List
-      Expanded(
-        child: filteredInquiries.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.inbox_outlined,
-                      size: 64,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No inquiries found',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _selectedSchool == 'All Schools'
-                          ? 'No student inquiries yet'
-                          : 'No inquiries from $_selectedSchool',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: filteredInquiries.length,
-                itemBuilder: (context, index) {
-                  return _buildInquiryCard(filteredInquiries[index]);
+              TextButton.icon(
+                onPressed: () {
+                  // Refresh the list
+                  setState(() {});
                 },
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Refresh'),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF2C4A7C),
+                ),
               ),
-      ),
-    ],
-  );
-}
+            ],
+          ),
+        ),
+
+        // Inquiries List
+        Expanded(
+          child: filteredInquiries.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.inbox_outlined,
+                        size: 64,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No inquiries found',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No inquiries from ${widget.selectedSchool}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: filteredInquiries.length,
+                  itemBuilder: (context, index) {
+                    return _buildInquiryCard(filteredInquiries[index]);
+                  },
+                ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Container(

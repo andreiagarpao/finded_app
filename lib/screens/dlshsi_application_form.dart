@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../models/studin.dart';
+import '../services/studinquireserve.dart';
+import '../models/studin.dart';
+import '../services/studinquireserve.dart';
 
 class DLSHSIApplicationForm extends StatefulWidget {
   const DLSHSIApplicationForm({super.key});
@@ -10,6 +14,7 @@ class DLSHSIApplicationForm extends StatefulWidget {
 
 class _DLSHSIApplicationFormState extends State<DLSHSIApplicationForm> {
   int _currentStep = 0;
+  final StudentInquiryService _service = StudentInquiryService();
 
   // Controllers for form fields
   final _firstNameController = TextEditingController();
@@ -23,6 +28,7 @@ class _DLSHSIApplicationFormState extends State<DLSHSIApplicationForm> {
   final _highSchoolController = TextEditingController();
   final _graduationYearController = TextEditingController();
   final _gpaController = TextEditingController();
+  final _inquiryController = TextEditingController(); // New field for inquiry
 
   String? _selectedProgram;
   String? _selectedGender;
@@ -53,6 +59,7 @@ class _DLSHSIApplicationFormState extends State<DLSHSIApplicationForm> {
     _highSchoolController.dispose();
     _graduationYearController.dispose();
     _gpaController.dispose();
+    _inquiryController.dispose();
     super.dispose();
   }
 
@@ -91,7 +98,7 @@ class _DLSHSIApplicationFormState extends State<DLSHSIApplicationForm> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text(_currentStep == 2 ? 'Submit' : 'Continue'),
+                  child: Text(_currentStep == 3 ? 'Submit' : 'Continue'),
                 ),
                 if (_currentStep > 0) ...[
                   const SizedBox(width: 12),
@@ -277,7 +284,16 @@ class _DLSHSIApplicationFormState extends State<DLSHSIApplicationForm> {
                   icon: Icons.grade,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 ),
-                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+          // Step 4: Inquiry/Additional Information
+          Step(
+            title: const Text('Inquiry & Questions'),
+            isActive: _currentStep >= 3,
+            state: _currentStep > 3 ? StepState.complete : StepState.indexed,
+            content: Column(
+              children: [
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -287,14 +303,66 @@ class _DLSHSIApplicationFormState extends State<DLSHSIApplicationForm> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, color: Colors.blue[700]),
+                      Icon(Icons.help_outline, color: Colors.blue[700]),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Please ensure all information is accurate before submitting.',
+                          'Do you have any questions or concerns about your application?',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.blue[900],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _inquiryController,
+                  maxLines: 5,
+                  decoration: InputDecoration(
+                    labelText: 'Your Questions or Concerns',
+                    hintText: 'e.g., What are the scholarship opportunities? When is the enrollment period?',
+                    prefixIcon: const Padding(
+                      padding: EdgeInsets.only(bottom: 80),
+                      child: Icon(Icons.message, color: Color(0xFF1565C0)),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFF1565C0), width: 2),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    alignLabelWithHint: true,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.green[700]),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Please ensure all information is accurate before submitting. We will review your application and respond to your inquiry within 5-7 business days.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.green[900],
                           ),
                         ),
                       ),
@@ -332,7 +400,6 @@ class _DLSHSIApplicationFormState extends State<DLSHSIApplicationForm> {
         _showError('Please select your civil status');
         return;
       }
-      // Move to next step
       setState(() {
         _currentStep = 1;
       });
@@ -366,7 +433,6 @@ class _DLSHSIApplicationFormState extends State<DLSHSIApplicationForm> {
         _showError('Please enter your zip code');
         return;
       }
-      // Move to next step
       setState(() {
         _currentStep = 2;
       });
@@ -398,7 +464,12 @@ class _DLSHSIApplicationFormState extends State<DLSHSIApplicationForm> {
         _showError('Please enter a valid GPA (0-100)');
         return;
       }
-      // Submit the form
+      setState(() {
+        _currentStep = 3;
+      });
+    } else if (_currentStep == 3) {
+      // Step 4 - Inquiry is optional, but we can validate if needed
+      // For now, we'll allow empty inquiry
       _submitApplication();
     }
   }
@@ -523,6 +594,76 @@ class _DLSHSIApplicationFormState extends State<DLSHSIApplicationForm> {
   }
 
   void _submitApplication() {
+    // DEBUG: Print before anything
+    print('🎯 ========== DLSHSI SUBMIT APPLICATION START ==========');
+    _service.debugPrintInstance();
+    
+    // Generate a unique ID for this application
+    final String applicationId = _service.generateId();
+    
+    // Get the full name
+    String fullName = _firstNameController.text.trim();
+    if (_middleNameController.text.trim().isNotEmpty) {
+      fullName += ' ${_middleNameController.text.trim()}';
+    }
+    fullName += ' ${_lastNameController.text.trim()}';
+    
+    // Get current date in YYYY-MM-DD format
+    final now = DateTime.now();
+    final String currentDate = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    
+    // Create the inquiry object using the model
+    // KEY DIFFERENCE: school is set to 'DLSHSI' instead of 'CVSU'
+    final inquiry = StudentInquiry(
+      id: applicationId,
+      studentName: fullName,
+      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim(),
+      school: 'DLSHSI',  // <-- This is the critical identifier
+      inquiry: _inquiryController.text.trim().isEmpty 
+          ? 'Application for ${_selectedProgram ?? "program"}'
+          : _inquiryController.text.trim(),
+      date: currentDate,
+      status: 'Pending',
+      personalInfo: PersonalInfo(
+        firstName: _firstNameController.text.trim(),
+        middleName: _middleNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        birthDate: _birthDate?.toIso8601String(),
+        gender: _selectedGender,
+        civilStatus: _selectedCivilStatus,
+      ),
+      contactInfo: ContactInfo(
+        address: _addressController.text.trim(),
+        city: _cityController.text.trim(),
+        zipCode: _zipCodeController.text.trim(),
+      ),
+      academicInfo: AcademicInfo(
+        program: _selectedProgram ?? '',
+        highSchool: _highSchoolController.text.trim(),
+        graduationYear: _graduationYearController.text.trim(),
+        gpa: _gpaController.text.trim(),
+      ),
+    );
+
+    print('📝 Created inquiry object for: $fullName');
+    print('📝 School: DLSHSI');
+    print('📝 Email: ${_emailController.text.trim()}');
+    
+    // Add to service (this makes it available to admin dashboard)
+    print('➡️ Adding inquiry to service...');
+    _service.addInquiry(inquiry);
+    
+    // DEBUG: Print after adding
+    print('🎯 After adding inquiry - Service instance check:');
+    _service.debugPrintInstance();
+    print('🎯 ========== DLSHSI SUBMIT APPLICATION COMPLETED ==========');
+
+    // Print for debugging
+    print('Application submitted:');
+    print(inquiry.toJson());
+
+    // Show success dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -542,9 +683,54 @@ class _DLSHSIApplicationFormState extends State<DLSHSIApplicationForm> {
             const Expanded(child: Text('Application Submitted!')),
           ],
         ),
-        content: const Text(
-          'Your application has been successfully submitted. We will review your application and contact you via email within 5-7 business days.',
-          style: TextStyle(fontSize: 15),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your application has been successfully submitted.',
+              style: TextStyle(fontSize: 15),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.confirmation_number, size: 16),
+                      const SizedBox(width: 8),
+                      const Text('Application ID: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      Text(applicationId, style: const TextStyle(fontSize: 13)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.email, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _emailController.text.trim(),
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'We will review your application and respond to your inquiry within 5-7 business days via email.',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
         ),
         actions: [
           ElevatedButton(

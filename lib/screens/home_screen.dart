@@ -6,7 +6,7 @@ import 'search_screen.dart';
 import 'compare_univ.dart';
 import 'cvsu_application_form.dart';
 import 'admindash.dart';
-import 'SignIn.dart'; // Add this import
+import 'SignIn.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,7 +23,6 @@ class _HomeScreenState extends State<HomeScreen> {
     {'icon': Icons.home_outlined, 'label': 'Home'},
     {'icon': Icons.search, 'label': 'Search'},
     {'icon': Icons.compare_arrows, 'label': 'Compare'},
-    {'icon': Icons.person_outline, 'label': 'Profile'},
   ];
 
   final List<String> _categories = [
@@ -77,74 +76,11 @@ class _HomeScreenState extends State<HomeScreen> {
         context,
         MaterialPageRoute(builder: (context) => const CompareUnivScreen()),
       );
-    } else if (index == 3) {
-      _showProfileMenu();
     } else {
       setState(() {
         _selectedIndex = index;
       });
     }
-  }
-
-  void _showProfileMenu() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.school, color: Color(0xFF1565C0)),
-              title: const Text('Apply to CVSU'),
-              subtitle: const Text('Submit your application'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CvsuApplicationForm(),
-                  ),
-                );
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.admin_panel_settings, color: Color(0xFF2C4A7C)),
-              title: const Text('Admin Dashboard'),
-              subtitle: const Text('Manage inquiries'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AdminDashboard(
-                      selectedSchool: 'CVSU',
-                    ),
-                  ),
-                );
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Sign Out'),
-              onTap: () {
-                Navigator.pop(context); // Close bottom sheet
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SignIn()),
-                  (route) => false,
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -179,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Changed from Text to IconButton for back navigation
+              // Back button with sign out confirmation
               IconButton(
                 icon: const Icon(
                   Icons.arrow_back_ios,
