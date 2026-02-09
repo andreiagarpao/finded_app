@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'SignUp.dart';
 import 'home_screen.dart';
+import 'adminlogin.dart';
 
 class SignIn extends StatefulWidget {
   const SignIn({super.key});
@@ -13,6 +14,7 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  bool _isPasswordVisible = false;
 
   @override
   void initState() {
@@ -76,48 +78,57 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
             ),
           ),
           
-          // Centered content
-          Center(
+          // Main scrollable content
+          SafeArea(
             child: SingleChildScrollView(
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Header text
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 40),
-                        child: Column(
-                          children: [
-                            Text(
-                              "FindEd Cavite",
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                letterSpacing: 0.5,
-                              ),
+              physics: const BouncingScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: screenHeight - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
+                ),
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Header text
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 40),
+                            child: Column(
+                              children: [
+                                Text(
+                                  "FindEd Cavite",
+                                  style: TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  "Welcome back! Sign in to continue",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w300,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                             ),
-                            SizedBox(height: 8),
-                            Text(
-                              "Welcome back! Sign in to continue",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w300,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 30),
+                          
+                          // White container
+                          _buildContentContainer(context),
+                        ],
                       ),
-                      const SizedBox(height: 30),
-                      
-                      // White container
-                      _buildContentContainer(context),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -131,7 +142,7 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
   Widget _buildContentContainer(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(30),
+      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(30),
@@ -245,6 +256,27 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
               ),
             ),
           ),
+
+          const SizedBox(height: 15),
+
+          // Admin Login Link - THIS SHOULD NOW BE VISIBLE
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AdminLogin()),
+              );
+            },
+            child: const Text(
+              "Admin Login",
+              style: TextStyle(
+                color: Color(0xFF2C4A7C),
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -252,7 +284,7 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
 
   Widget _buildField(String hint, IconData icon, {bool isPass = false}) {
     return TextField(
-      obscureText: isPass,
+      obscureText: isPass ? !_isPasswordVisible : false,
       style: const TextStyle(fontSize: 15),
       decoration: InputDecoration(
         hintText: hint,
@@ -263,8 +295,20 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
         ),
         prefixIcon: Icon(icon, color: const Color(0xFF2C4A7C), size: 22),
         suffixIcon: isPass
-            ? const Icon(Icons.visibility_outlined, 
-                color: Color(0xFF2C4A7C), size: 22)
+            ? IconButton(
+                icon: Icon(
+                  _isPasswordVisible 
+                    ? Icons.visibility_outlined 
+                    : Icons.visibility_off_outlined,
+                  color: const Color(0xFF2C4A7C),
+                  size: 22,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isPasswordVisible = !_isPasswordVisible;
+                  });
+                },
+              )
             : null,
         filled: true,
         fillColor: const Color(0xFFECEFF1),
