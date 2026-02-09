@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../models/studin.dart';
+import '../services/studinquireserve.dart';
 
 class AdminDashboard extends StatefulWidget {
   final String selectedSchool;
@@ -15,6 +17,7 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
   late String _selectedSchool;
+  final StudentInquiryService _service = StudentInquiryService();
 
   // Available schools
   final List<String> _schools = [
@@ -26,63 +29,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   void initState() {
     super.initState();
-    // Initialize with the school passed from login
     _selectedSchool = widget.selectedSchool;
   }
-
-  // Mock data for student inquiries
-  final List<Map<String, dynamic>> _studentInquiries = [
-    {
-      'id': '001',
-      'studentName': 'Juan Dela Cruz',
-      'email': 'juan.delacruz@email.com',
-      'phone': '09123456789',
-      'school': 'CVSU',
-      'inquiry': 'What are the requirements for enrollment?',
-      'date': '2024-02-08',
-      'status': 'Pending',
-    },
-    {
-      'id': '002',
-      'studentName': 'Maria Santos',
-      'email': 'maria.santos@email.com',
-      'phone': '09234567890',
-      'school': 'DLSHSI',
-      'inquiry': 'Do you have scholarships available?',
-      'date': '2024-02-07',
-      'status': 'Responded',
-    },
-    {
-      'id': '003',
-      'studentName': 'Pedro Garcia',
-      'email': 'pedro.garcia@email.com',
-      'phone': '09345678901',
-      'school': 'CVSU',
-      'inquiry': 'What courses are offered for Senior High School?',
-      'date': '2024-02-07',
-      'status': 'Pending',
-    },
-    {
-      'id': '004',
-      'studentName': 'Ana Reyes',
-      'email': 'ana.reyes@email.com',
-      'phone': '09456789012',
-      'school': 'DLSHSI',
-      'inquiry': 'How much is the tuition fee for Grade 11?',
-      'date': '2024-02-06',
-      'status': 'Responded',
-    },
-    {
-      'id': '005',
-      'studentName': 'Jose Ramos',
-      'email': 'jose.ramos@email.com',
-      'phone': '09567890123',
-      'school': 'CVSU',
-      'inquiry': 'Is there an entrance exam?',
-      'date': '2024-02-06',
-      'status': 'Pending',
-    },
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -150,192 +98,196 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildInquiriesView() {
-    // Filter inquiries by selected school
-    List<Map<String, dynamic>> filteredInquiries = _selectedSchool == 'All Schools'
-        ? _studentInquiries
-        : _studentInquiries.where((inquiry) => inquiry['school'] == _selectedSchool).toList();
+Widget _buildInquiriesView() {
+  // DEBUG: Print service info
+  print('🎯 ========== ADMIN DASHBOARD BUILDING ==========');
+  print('🎯 Admin Dashboard - Service instance check:');
+  _service.debugPrintInstance();
+  
+  // Get filtered inquiries from service
+  final filteredInquiries = _service.getInquiriesBySchool(_selectedSchool);
+  final stats = _service.getStatistics(school: _selectedSchool);
 
-    // Filter inquiries by status
-    int pendingCount = filteredInquiries.where((inquiry) => inquiry['status'] == 'Pending').length;
-    int respondedCount = filteredInquiries.where((inquiry) => inquiry['status'] == 'Responded').length;
+  print('📋 Displaying ${filteredInquiries.length} inquiries for $_selectedSchool');
+  print('🎯 ========== ADMIN DASHBOARD BUILD COMPLETE ==========');
 
-    return Column(
-      children: [
-        // Stats Cards
-        Container(
-          color: const Color(0xFF2C4A7C),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          child: Column(
-            children: [
-              // School Selector
-              Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _selectedSchool,
-                    isExpanded: true,
-                    icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF2C4A7C)),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2C4A7C),
-                    ),
-                    onChanged: (String? newValue) {
-                      if (newValue != null) {
-                        setState(() {
-                          _selectedSchool = newValue;
-                        });
-                      }
-                    },
-                    items: _schools.map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Row(
-                          children: [
-                            Icon(
-                              value == 'All Schools' 
-                                ? Icons.school 
-                                : Icons.location_city,
-                              size: 20,
-                              color: const Color(0xFF2C4A7C),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(value),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
+  return Column(
+    children: [
+      // ... rest of your existing code (keep everything the same)
+      // Stats Cards
+      Container(
+        color: const Color(0xFF2C4A7C),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        child: Column(
+          children: [
+            // School Selector
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
               ),
-
-              // Stats Row
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      'Total',
-                      filteredInquiries.length.toString(),
-                      Icons.inbox,
-                      const Color(0xFFFFC107),
-                    ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedSchool,
+                  isExpanded: true,
+                  icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF2C4A7C)),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2C4A7C),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatCard(
-                      'Pending',
-                      pendingCount.toString(),
-                      Icons.pending_outlined,
-                      Colors.orange,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatCard(
-                      'Responded',
-                      respondedCount.toString(),
-                      Icons.check_circle_outline,
-                      Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        // Inquiries List Header
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Recent Inquiries',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2C4A7C),
-                    ),
-                  ),
-                  if (_selectedSchool != 'All Schools')
-                    Text(
-                      'Showing $_selectedSchool only',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                ],
-              ),
-              TextButton.icon(
-                onPressed: () {
-                  // Filter inquiries
-                },
-                icon: const Icon(Icons.filter_list, size: 18),
-                label: const Text('Filter'),
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF2C4A7C),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Inquiries List
-        Expanded(
-          child: filteredInquiries.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.inbox_outlined,
-                        size: 64,
-                        color: Colors.grey[400],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No inquiries found',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _selectedSchool == 'All Schools'
-                            ? 'No student inquiries yet'
-                            : 'No inquiries from $_selectedSchool',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: filteredInquiries.length,
-                  itemBuilder: (context, index) {
-                    final inquiry = filteredInquiries[index];
-                    return _buildInquiryCard(inquiry);
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedSchool = newValue;
+                      });
+                    }
                   },
+                  items: _schools.map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Row(
+                        children: [
+                          Icon(
+                            value == 'All Schools' 
+                              ? Icons.school 
+                              : Icons.location_city,
+                            size: 20,
+                            color: const Color(0xFF2C4A7C),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(value),
+                        ],
+                      ),
+                    );
+                  }).toList(),
                 ),
+              ),
+            ),
+
+            // Stats Row
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    'Total',
+                    stats['total'].toString(),
+                    Icons.inbox,
+                    const Color(0xFFFFC107),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatCard(
+                    'Pending',
+                    stats['pending'].toString(),
+                    Icons.pending_outlined,
+                    Colors.orange,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatCard(
+                    'Responded',
+                    stats['responded'].toString(),
+                    Icons.check_circle_outline,
+                    Colors.green,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-      ],
-    );
-  }
+      ),
+
+      // Inquiries List Header
+      Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Recent Inquiries',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2C4A7C),
+                  ),
+                ),
+                if (_selectedSchool != 'All Schools')
+                  Text(
+                    'Showing $_selectedSchool only',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+              ],
+            ),
+            TextButton.icon(
+              onPressed: () {
+                // Refresh the list
+                setState(() {});
+              },
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Refresh'),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF2C4A7C),
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      // Inquiries List
+      Expanded(
+        child: filteredInquiries.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.inbox_outlined,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No inquiries found',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _selectedSchool == 'All Schools'
+                          ? 'No student inquiries yet'
+                          : 'No inquiries from $_selectedSchool',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: filteredInquiries.length,
+                itemBuilder: (context, index) {
+                  return _buildInquiryCard(filteredInquiries[index]);
+                },
+              ),
+      ),
+    ],
+  );
+}
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Container(
@@ -370,10 +322,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildInquiryCard(Map<String, dynamic> inquiry) {
-    bool isPending = inquiry['status'] == 'Pending';
-    String studentName = inquiry['studentName'] ?? 'Unknown';
-    String initial = studentName.isNotEmpty ? studentName[0].toUpperCase() : 'U';
+  Widget _buildInquiryCard(StudentInquiry inquiry) {
+    bool isPending = inquiry.status == 'Pending';
+    String initial = inquiry.studentName.isNotEmpty ? inquiry.studentName[0].toUpperCase() : 'U';
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -423,7 +374,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  studentName,
+                                  inquiry.studentName,
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -440,7 +391,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
-                                        inquiry['school'] ?? 'N/A',
+                                        inquiry.school,
                                         style: const TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.bold,
@@ -451,7 +402,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     const SizedBox(width: 6),
                                     Expanded(
                                       child: Text(
-                                        inquiry['email'] ?? 'N/A',
+                                        inquiry.email,
                                         style: const TextStyle(
                                           fontSize: 12,
                                           color: Colors.grey,
@@ -476,7 +427,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        inquiry['status'] ?? 'Unknown',
+                        inquiry.status,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -491,7 +442,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
                 // Inquiry Text
                 Text(
-                  inquiry['inquiry'] ?? 'No inquiry text',
+                  inquiry.inquiry,
                   style: const TextStyle(
                     fontSize: 14,
                     color: Colors.black87,
@@ -512,7 +463,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
                         const SizedBox(width: 4),
                         Text(
-                          inquiry['date'] ?? 'N/A',
+                          inquiry.date,
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
@@ -522,7 +473,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         const Icon(Icons.phone, size: 14, color: Colors.grey),
                         const SizedBox(width: 4),
                         Text(
-                          inquiry['phone'] ?? 'N/A',
+                          inquiry.phone,
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
@@ -589,12 +540,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  void _showInquiryDetails(Map<String, dynamic> inquiry) {
+  void _showInquiryDetails(StudentInquiry inquiry) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          inquiry['studentName'] ?? 'Unknown Student',
+          inquiry.studentName,
           style: const TextStyle(
             color: Color(0xFF2C4A7C),
             fontWeight: FontWeight.bold,
@@ -605,15 +556,37 @@ class _AdminDashboardState extends State<AdminDashboard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildDetailRow(Icons.school, 'School', inquiry['school'] ?? 'N/A'),
+              _buildDetailRow(Icons.school, 'School', inquiry.school),
               const SizedBox(height: 12),
-              _buildDetailRow(Icons.email, 'Email', inquiry['email'] ?? 'N/A'),
+              _buildDetailRow(Icons.email, 'Email', inquiry.email),
               const SizedBox(height: 12),
-              _buildDetailRow(Icons.phone, 'Phone', inquiry['phone'] ?? 'N/A'),
+              _buildDetailRow(Icons.phone, 'Phone', inquiry.phone),
               const SizedBox(height: 12),
-              _buildDetailRow(Icons.calendar_today, 'Date', inquiry['date'] ?? 'N/A'),
+              _buildDetailRow(Icons.calendar_today, 'Date', inquiry.date),
               const SizedBox(height: 12),
-              _buildDetailRow(Icons.info_outline, 'Status', inquiry['status'] ?? 'N/A'),
+              _buildDetailRow(Icons.info_outline, 'Status', inquiry.status),
+              
+              // Show additional details if available
+              if (inquiry.academicInfo != null) ...[
+                const Divider(height: 24),
+                const Text(
+                  'Academic Information:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Color(0xFF2C4A7C),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildDetailRow(Icons.school_outlined, 'Program', inquiry.academicInfo!.program),
+                const SizedBox(height: 8),
+                _buildDetailRow(Icons.location_city, 'High School', inquiry.academicInfo!.highSchool),
+                const SizedBox(height: 8),
+                _buildDetailRow(Icons.calendar_month, 'Graduation Year', inquiry.academicInfo!.graduationYear),
+                const SizedBox(height: 8),
+                _buildDetailRow(Icons.grade, 'GPA', inquiry.academicInfo!.gpa),
+              ],
+              
               const Divider(height: 24),
               const Text(
                 'Inquiry:',
@@ -625,18 +598,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
               const SizedBox(height: 8),
               Text(
-                inquiry['inquiry'] ?? 'No inquiry text',
+                inquiry.inquiry,
                 style: const TextStyle(fontSize: 14, height: 1.5),
               ),
             ],
           ),
         ),
         actions: [
-          if (inquiry['status'] == 'Pending')
+          if (inquiry.status == 'Pending')
             TextButton(
               onPressed: () {
                 setState(() {
-                  inquiry['status'] = 'Responded';
+                  _service.updateInquiryStatus(inquiry.id, 'Responded');
                 });
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(

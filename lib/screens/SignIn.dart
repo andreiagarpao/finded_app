@@ -16,6 +16,17 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
   late Animation<Offset> _slideAnimation;
   bool _isPasswordVisible = false;
 
+  // Controllers for text fields
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  // Mock user accounts
+  final Map<String, String> _mockAccounts = {
+    'student@finded.com': 'student123',
+    'user@finded.com': 'user123',
+    'test@finded.com': 'test123',
+  };
+
   @override
   void initState() {
     super.initState();
@@ -41,7 +52,117 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
   @override
   void dispose() {
     _animationController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
+  }
+
+  void _handleSignIn() {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      _showErrorDialog('Please enter both email and password');
+      return;
+    }
+
+    // Check if account exists and password matches
+    if (_mockAccounts.containsKey(email)) {
+      if (_mockAccounts[email] == password) {
+        // Successful login
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      } else {
+        _showErrorDialog('Incorrect password');
+      }
+    } else {
+      _showErrorDialog('Account not found');
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red),
+            SizedBox(width: 10),
+            Text('Login Failed'),
+          ],
+        ),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'OK',
+              style: TextStyle(color: Color(0xFF2C4A7C)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAccountsInfo() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline, color: Color(0xFF2C4A7C)),
+            SizedBox(width: 10),
+            Text('Test Accounts'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Use any of these accounts to sign in:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            ..._mockAccounts.entries.map((entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Email: ${entry.key}',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  Text(
+                    'Password: ${entry.value}',
+                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                  const Divider(),
+                ],
+              ),
+            )),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Got it',
+              style: TextStyle(color: Color(0xFF2C4A7C)),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -74,6 +195,20 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
                 icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
                 onPressed: () => Navigator.pop(context),
                 padding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+
+          // Info button for test accounts
+          Positioned(
+            top: 40,
+            right: 10,
+            child: SafeArea(
+              child: IconButton(
+                icon: const Icon(Icons.info_outline, color: Colors.white, size: 24),
+                onPressed: _showAccountsInfo,
+                padding: EdgeInsets.zero,
+                tooltip: 'View test accounts',
               ),
             ),
           ),
@@ -150,10 +285,43 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Info banner
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2C4A7C).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.lightbulb_outline,
+                  color: Color(0xFF2C4A7C),
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _showAccountsInfo,
+                    child: const Text(
+                      'Tap the info icon to view test accounts',
+                      style: TextStyle(
+                        color: Color(0xFF2C4A7C),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
           // Input Fields
-          _buildField("Email", Icons.email_outlined),
+          _buildField("Email", Icons.email_outlined, controller: _emailController),
           const SizedBox(height: 12),
-          _buildField("Password", Icons.lock_outline, isPass: true),
+          _buildField("Password", Icons.lock_outline, isPass: true, controller: _passwordController),
 
           // Forgot Password
           Align(
@@ -180,12 +348,7 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
 
           // Sign In Button
           ElevatedButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
-              );
-            },
+            onPressed: _handleSignIn,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2C4A7C),
               minimumSize: const Size(double.infinity, 50),
@@ -259,7 +422,7 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
 
           const SizedBox(height: 15),
 
-          // Admin Login Link - THIS SHOULD NOW BE VISIBLE
+          // Admin Login Link
           GestureDetector(
             onTap: () {
               Navigator.push(
@@ -282,8 +445,9 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget _buildField(String hint, IconData icon, {bool isPass = false}) {
+  Widget _buildField(String hint, IconData icon, {bool isPass = false, TextEditingController? controller}) {
     return TextField(
+      controller: controller,
       obscureText: isPass ? !_isPasswordVisible : false,
       style: const TextStyle(fontSize: 15),
       decoration: InputDecoration(

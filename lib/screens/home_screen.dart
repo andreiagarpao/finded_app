@@ -4,6 +4,9 @@ import '../widgets/category_chip.dart';
 import '../widgets/university_card.dart';
 import 'search_screen.dart';
 import 'compare_univ.dart';
+import 'cvsu_application_form.dart';
+import 'admindash.dart';
+import 'SignIn.dart'; // Add this import
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,6 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
     {'icon': Icons.home_outlined, 'label': 'Home'},
     {'icon': Icons.search, 'label': 'Search'},
     {'icon': Icons.compare_arrows, 'label': 'Compare'},
+    {'icon': Icons.person_outline, 'label': 'Profile'},
   ];
 
   final List<String> _categories = [
@@ -64,26 +68,83 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onNavItemTapped(int index) {
     if (index == 1) {
-      // Navigate to SearchScreen when Search is tapped
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => const SearchScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const SearchScreen()),
       );
     } else if (index == 2) {
-      // Navigate to CompareUnivScreen when Compare is tapped
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => const CompareUnivScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const CompareUnivScreen()),
       );
+    } else if (index == 3) {
+      _showProfileMenu();
     } else {
       setState(() {
         _selectedIndex = index;
       });
     }
+  }
+
+  void _showProfileMenu() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.school, color: Color(0xFF1565C0)),
+              title: const Text('Apply to CVSU'),
+              subtitle: const Text('Submit your application'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CvsuApplicationForm(),
+                  ),
+                );
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.admin_panel_settings, color: Color(0xFF2C4A7C)),
+              title: const Text('Admin Dashboard'),
+              subtitle: const Text('Manage inquiries'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AdminDashboard(
+                      selectedSchool: 'CVSU',
+                    ),
+                  ),
+                );
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text('Sign Out'),
+              onTap: () {
+                Navigator.pop(context); // Close bottom sheet
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SignIn()),
+                  (route) => false,
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -94,21 +155,11 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Section
               _buildHeader(),
-              
-              // Search Bar
               _buildSearchBar(),
-              
-              // Category Chips
               _buildCategoryChips(),
-              
-              // Featured Universities Section
               _buildFeaturedSection(),
-              
-              // About Section
               _buildAboutSection(),
-              
               const SizedBox(height: 20),
             ],
           ),
@@ -128,24 +179,103 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Home',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.notifications_outlined,
+              // Changed from Text to IconButton for back navigation
+              IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios,
                   color: Colors.white,
                   size: 20,
                 ),
+                onPressed: () {
+                  // Show confirmation dialog before going back to sign in
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Sign Out'),
+                      content: const Text('Are you sure you want to sign out?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context); // Close dialog
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(builder: (context) => const SignIn()),
+                              (route) => false,
+                            );
+                          },
+                          child: const Text(
+                            'Sign Out',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                padding: EdgeInsets.zero,
+              ),
+              Row(
+                children: [
+                  // Quick Apply Button
+                  Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    child: Material(
+                      color: const Color(0xFF1565C0),
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CvsuApplicationForm(),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.edit_document, 
+                                color: Colors.white, 
+                                size: 16,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                'Apply',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.notifications_outlined,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -180,7 +310,6 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: GestureDetector(
           onTap: () {
-            // Navigate to SearchScreen when tapped
             Navigator.push(
               context,
               MaterialPageRoute(
