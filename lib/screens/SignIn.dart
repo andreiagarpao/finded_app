@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'SignUp.dart';
 import 'home_screen.dart';
 import 'adminlogin.dart';
+import '../services/auth_service.dart';
 
 class SignIn extends StatefulWidget {
   const SignIn({super.key});
@@ -15,17 +16,12 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
 
   // Controllers for text fields
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
-  // Mock user accounts
-  final Map<String, String> _mockAccounts = {
-    'student@finded.com': 'student123',
-    'user@finded.com': 'user123',
-    'test@finded.com': 'test123',
-  };
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
@@ -57,7 +53,7 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
-  void _handleSignIn() {
+  Future<void> _handleSignIn() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
@@ -66,19 +62,41 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
       return;
     }
 
-    // Check if account exists and password matches
-    if (_mockAccounts.containsKey(email)) {
-      if (_mockAccounts[email] == password) {
-        // Successful login
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
-      } else {
-        _showErrorDialog('Incorrect password');
+    // Show loading
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Attempt to sign in with Supabase
+      final result = await _authService.signIn(
+        email: email,
+        password: password,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        if (result['success'] == true) {
+          // Successful login
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+          );
+        } else {
+          // Show error message from Supabase
+          _showErrorDialog(result['error'] ?? 'Login failed');
+        }
       }
-    } else {
-      _showErrorDialog('Account not found');
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        _showErrorDialog('An unexpected error occurred: $e');
+      }
     }
   }
 
@@ -110,7 +128,9 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
     );
   }
 
-  void _showAccountsInfo() {
+  void _showForgotPasswordDialog() {
+    final emailController = TextEditingController();
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -119,46 +139,62 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
         ),
         title: const Row(
           children: [
-            Icon(Icons.info_outline, color: Color(0xFF2C4A7C)),
+            Icon(Icons.lock_reset, color: Color(0xFF2C4A7C)),
             SizedBox(width: 10),
-            Text('Test Accounts'),
+            Text('Reset Password'),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Use any of these accounts to sign in:',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              'Enter your email address and we\'ll send you a password reset link.',
+              style: TextStyle(fontSize: 14),
             ),
-            const SizedBox(height: 12),
-            ..._mockAccounts.entries.map((entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Email: ${entry.key}',
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                  Text(
-                    'Password: ${entry.value}',
-                    style: const TextStyle(fontSize: 13, color: Colors.grey),
-                  ),
-                  const Divider(),
-                ],
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              decoration: InputDecoration(
+                hintText: 'Email',
+                prefixIcon: const Icon(Icons.email_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-            )),
+            ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Got it',
-              style: TextStyle(color: Color(0xFF2C4A7C)),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final email = emailController.text.trim();
+              if (email.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter your email')),
+                );
+                return;
+              }
+              
+              Navigator.pop(context);
+              
+              final result = await _authService.resetPassword(email);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(result['message'] ?? result['error'] ?? 'Request sent'),
+                    backgroundColor: result['success'] == true ? Colors.green : Colors.red,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2C4A7C),
             ),
+            child: const Text('Send Reset Link'),
           ),
         ],
       ),
@@ -195,20 +231,6 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
                 icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
                 onPressed: () => Navigator.pop(context),
                 padding: EdgeInsets.zero,
-              ),
-            ),
-          ),
-
-          // Info button for test accounts
-          Positioned(
-            top: 40,
-            right: 10,
-            child: SafeArea(
-              child: IconButton(
-                icon: const Icon(Icons.info_outline, color: Colors.white, size: 24),
-                onPressed: _showAccountsInfo,
-                padding: EdgeInsets.zero,
-                tooltip: 'View test accounts',
               ),
             ),
           ),
@@ -269,6 +291,17 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
               ),
             ),
           ),
+
+          // Loading overlay
+          if (_isLoading)
+            Container(
+              color: Colors.black54,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFFFFC107),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -285,37 +318,8 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Info banner
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2C4A7C).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.lightbulb_outline,
-                  color: Color(0xFF2C4A7C),
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: _showAccountsInfo,
-                    child: const Text(
-                      'Tap the info icon to view test accounts',
-                      style: TextStyle(
-                        color: Color(0xFF2C4A7C),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+         
+      
           const SizedBox(height: 20),
 
           // Input Fields
@@ -327,7 +331,7 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: () {},
+              onPressed: _showForgotPasswordDialog,
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
                 minimumSize: const Size(0, 0),
@@ -348,7 +352,7 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
 
           // Sign In Button
           ElevatedButton(
-            onPressed: _handleSignIn,
+            onPressed: _isLoading ? null : _handleSignIn,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2C4A7C),
               minimumSize: const Size(double.infinity, 50),
@@ -357,26 +361,37 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
               ),
               elevation: 0,
             ),
-            child: const Text(
-              "Sign In",
-              style: TextStyle(
-                color: Color(0xFFFFC107),
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child: _isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFFFFC107),
+                    ),
+                  )
+                : const Text(
+                    "Sign In",
+                    style: TextStyle(
+                      color: Color(0xFFFFC107),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
           ),
 
           const SizedBox(height: 12),
 
           // Guest Button
           OutlinedButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
-              );
-            },
+            onPressed: _isLoading
+                ? null
+                : () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const HomeScreen()),
+                    );
+                  },
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 50),
               side: const BorderSide(color: Color(0xFF2C4A7C), width: 1.5),
@@ -450,6 +465,7 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
       controller: controller,
       obscureText: isPass ? !_isPasswordVisible : false,
       style: const TextStyle(fontSize: 15),
+      keyboardType: isPass ? TextInputType.text : TextInputType.emailAddress,
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(

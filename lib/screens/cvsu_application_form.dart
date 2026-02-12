@@ -597,158 +597,184 @@ class _CvsuApplicationFormState extends State<CvsuApplicationForm> {
     );
   }
 
-void _submitApplication() {
-  // DEBUG: Print before anything
-
-  _service.debugPrintInstance();
-  
-  // Generate a unique ID for this application
-  final String applicationId = _service.generateId();
-  
-  // Get the full name
-  String fullName = _firstNameController.text.trim();
-  if (_middleNameController.text.trim().isNotEmpty) {
-    fullName += ' ${_middleNameController.text.trim()}';
-  }
-  fullName += ' ${_lastNameController.text.trim()}';
-  
-  // Get current date in YYYY-MM-DD format
-  final now = DateTime.now();
-  final String currentDate = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-  
-  // Create the inquiry object using the model
-  final inquiry = StudentInquiry(
-    id: applicationId,
-    studentName: fullName,
-    email: _emailController.text.trim(),
-    phone: _phoneController.text.trim(),
-    school: 'CVSU',
-    inquiry: _inquiryController.text.trim().isEmpty 
-        ? 'Application for ${_selectedProgram ?? "program"}'
-        : _inquiryController.text.trim(),
-    date: currentDate,
-    status: 'Pending',
-    personalInfo: PersonalInfo(
-      firstName: _firstNameController.text.trim(),
-      middleName: _middleNameController.text.trim(),
-      lastName: _lastNameController.text.trim(),
-      birthDate: _birthDate?.toIso8601String(),
-      gender: _selectedGender,
-      civilStatus: _selectedCivilStatus,
-    ),
-    contactInfo: ContactInfo(
-      address: _addressController.text.trim(),
-      city: _cityController.text.trim(),
-      zipCode: _zipCodeController.text.trim(),
-    ),
-    academicInfo: AcademicInfo(
-      program: _selectedProgram ?? '',
-      highSchool: _highSchoolController.text.trim(),
-      graduationYear: _graduationYearController.text.trim(),
-      gpa: _gpaController.text.trim(),
-    ),
-  );
-
-  print('📝 Created inquiry object for: $fullName');
-  print('📝 School: CVSU');
-  print('📝 Email: ${_emailController.text.trim()}');
-  
-  // Add to service (this makes it available to admin dashboard)
-  print('➡️ Adding inquiry to service...');
-  _service.addInquiry(inquiry);
-  
-  // DEBUG: Print after adding
-  print('🎯 After adding inquiry - Service instance check:');
-  _service.debugPrintInstance();
-  print('🎯 ========== SUBMIT APPLICATION COMPLETED ==========');
-
-  // Print for debugging
-  print('Application submitted:');
-  print(inquiry.toJson());
-
-  // Show success dialog
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.green[100],
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.check, color: Colors.green, size: 32),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(child: Text('Application Submitted!')),
-        ],
+  Future<void> _submitApplication() async {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF1565C0),
+        ),
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Your application has been successfully submitted.',
-            style: TextStyle(fontSize: 15),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue[50],
-              borderRadius: BorderRadius.circular(8),
+    );
+
+    try {
+      // DEBUG: Print before anything
+      print('🎯 ========== CVSU SUBMIT APPLICATION START ==========');
+      
+      // Generate a unique ID for this application
+      final String applicationId = _service.generateId();
+      
+      // Get the full name
+      String fullName = _firstNameController.text.trim();
+      if (_middleNameController.text.trim().isNotEmpty) {
+        fullName += ' ${_middleNameController.text.trim()}';
+      }
+      fullName += ' ${_lastNameController.text.trim()}';
+      
+      // Get current date in ISO format for Supabase
+      final now = DateTime.now();
+      
+      // Create the inquiry object using the model
+      final inquiry = StudentInquiry(
+        id: applicationId,
+        studentName: fullName,
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        school: 'CVSU',
+        inquiry: _inquiryController.text.trim().isEmpty 
+            ? 'Application for ${_selectedProgram ?? "program"}'
+            : _inquiryController.text.trim(),
+        date: now.toIso8601String(),
+        status: 'Pending',
+        personalInfo: PersonalInfo(
+          firstName: _firstNameController.text.trim(),
+          middleName: _middleNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
+          birthDate: _birthDate?.toIso8601String(),
+          gender: _selectedGender,
+          civilStatus: _selectedCivilStatus,
+        ),
+        contactInfo: ContactInfo(
+          address: _addressController.text.trim(),
+          city: _cityController.text.trim(),
+          zipCode: _zipCodeController.text.trim(),
+        ),
+        academicInfo: AcademicInfo(
+          program: _selectedProgram ?? '',
+          highSchool: _highSchoolController.text.trim(),
+          graduationYear: _graduationYearController.text.trim(),
+          gpa: _gpaController.text.trim(),
+        ),
+      );
+
+      print('📝 Created inquiry object for: $fullName');
+      print('📝 School: CVSU');
+      print('📝 Email: ${_emailController.text.trim()}');
+      
+      // Add to service (this saves it to Supabase)
+      print('➡️ Adding inquiry to service...');
+      await _service.addInquiry(inquiry);
+      
+      print('🎯 ========== CVSU SUBMIT APPLICATION COMPLETED ==========');
+
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      // Show success dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green[100],
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check, color: Colors.green, size: 32),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(child: Text('Application Submitted!')),
+              ],
             ),
-            child: Column(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.confirmation_number, size: 16),
-                    const SizedBox(width: 8),
-                    const Text('Application ID: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    Text(applicationId, style: const TextStyle(fontSize: 13)),
-                  ],
+                const Text(
+                  'Your application has been successfully submitted.',
+                  style: TextStyle(fontSize: 15),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.email, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _emailController.text.trim(),
-                        style: const TextStyle(fontSize: 13),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.confirmation_number, size: 16),
+                          const SizedBox(width: 8),
+                          const Text('Application ID: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          Expanded(
+                            child: Text(applicationId, style: const TextStyle(fontSize: 13)),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.email, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _emailController.text.trim(),
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'We will review your application and respond to your inquiry within 5-7 business days via email.',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
                 ),
               ],
             ),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(context); // Return to previous screen
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1565C0),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('OK'),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          const Text(
-            'We will review your application and respond to your inquiry within 5-7 business days via email.',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
+        );
+      }
+    } catch (e) {
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+      
+      // Show error
+      print('❌ Error submitting application: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error submitting application: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
           ),
-        ],
-      ),
-      actions: [
-        ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context); // Close dialog
-            Navigator.pop(context); // Return to previous screen
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF1565C0),
-            foregroundColor: Colors.white,
-          ),
-          child: const Text('OK'),
-        ),
-      ],
-    ),
-  );
-}
+        );
+      }
+    }
+  }
 }

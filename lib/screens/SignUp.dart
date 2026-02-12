@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'SignIn.dart';
-
 
 class SignUp extends StatefulWidget {
   const SignUp({super.key});
@@ -13,6 +13,13 @@ class _SignUpState extends State<SignUp> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+
+  final _fullNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -39,7 +46,60 @@ class _SignUpState extends State<SignUp> with SingleTickerProviderStateMixin {
   @override
   void dispose() {
     _animationController.dispose();
+    _fullNameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _signUp() async {
+    final fullName = _fullNameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (fullName.isEmpty || email.isEmpty || password.isEmpty) {
+      _showMessage('Please fill in all fields');
+      return;
+    }
+
+    if (password != confirmPassword) {
+      _showMessage('Passwords do not match');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final supabase = Supabase.instance.client;
+
+      final response = await supabase.auth.signUp(
+        email: email,
+        password: password,
+        data: {
+          'full_name': fullName,
+        },
+      );
+
+      if (response.user != null) {
+        _showMessage('Account created! Please check your email to verify.');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const SignIn()),
+        );
+      }
+    } catch (e) {
+      _showMessage('Sign up failed: ${e.toString()}');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
@@ -51,7 +111,6 @@ class _SignUpState extends State<SignUp> with SingleTickerProviderStateMixin {
       backgroundColor: const Color(0xFF2C4A7C),
       body: Stack(
         children: [
-          // Image background
           Container(
             width: screenWidth,
             height: screenHeight,
@@ -62,8 +121,7 @@ class _SignUpState extends State<SignUp> with SingleTickerProviderStateMixin {
               ),
             ),
           ),
-          
-          // Back button
+
           SafeArea(
             child: Positioned(
               top: 10,
@@ -75,8 +133,7 @@ class _SignUpState extends State<SignUp> with SingleTickerProviderStateMixin {
               ),
             ),
           ),
-          
-          // Centered content
+
           Center(
             child: SingleChildScrollView(
               child: FadeTransition(
@@ -86,7 +143,6 @@ class _SignUpState extends State<SignUp> with SingleTickerProviderStateMixin {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Header text
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 40),
                         child: Column(
@@ -114,8 +170,6 @@ class _SignUpState extends State<SignUp> with SingleTickerProviderStateMixin {
                         ),
                       ),
                       const SizedBox(height: 30),
-                      
-                      // White container
                       _buildContentContainer(context),
                     ],
                   ),
@@ -139,18 +193,16 @@ class _SignUpState extends State<SignUp> with SingleTickerProviderStateMixin {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Input Fields
-          _buildField("Full Name", Icons.person_outline),
+          _buildField("Full Name", Icons.person_outline, controller: _fullNameController),
           const SizedBox(height: 12),
-          _buildField("Email", Icons.email_outlined),
+          _buildField("Email", Icons.email_outlined, controller: _emailController),
           const SizedBox(height: 12),
-          _buildField("Password", Icons.lock_outline, isPass: true),
+          _buildField("Password", Icons.lock_outline, isPass: true, controller: _passwordController),
           const SizedBox(height: 12),
-          _buildField("Confirm Password", Icons.lock_reset, isPass: true),
+          _buildField("Confirm Password", Icons.lock_reset, isPass: true, controller: _confirmPasswordController),
 
           const SizedBox(height: 15),
 
-          // Terms and Conditions
           Row(
             children: [
               SizedBox(
@@ -189,11 +241,8 @@ class _SignUpState extends State<SignUp> with SingleTickerProviderStateMixin {
 
           const SizedBox(height: 20),
 
-          // Create Account Button
           ElevatedButton(
-            onPressed: () {
-              // Handle sign up
-            },
+            onPressed: _isLoading ? null : _signUp,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2C4A7C),
               minimumSize: const Size(double.infinity, 50),
@@ -202,19 +251,20 @@ class _SignUpState extends State<SignUp> with SingleTickerProviderStateMixin {
               ),
               elevation: 0,
             ),
-            child: const Text(
-              "Create Account",
-              style: TextStyle(
-                color: Color(0xFFFFC107),
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child: _isLoading
+                ? const CircularProgressIndicator(color: Colors.white)
+                : const Text(
+                    "Create Account",
+                    style: TextStyle(
+                      color: Color(0xFFFFC107),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
           ),
 
           const SizedBox(height: 20),
 
-          // Sign In Link
           GestureDetector(
             onTap: () => Navigator.push(
               context,
@@ -242,8 +292,14 @@ class _SignUpState extends State<SignUp> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget _buildField(String hint, IconData icon, {bool isPass = false}) {
+  Widget _buildField(
+    String hint,
+    IconData icon, {
+    bool isPass = false,
+    required TextEditingController controller,
+  }) {
     return TextField(
+      controller: controller,
       obscureText: isPass,
       style: const TextStyle(fontSize: 15),
       decoration: InputDecoration(
@@ -255,7 +311,7 @@ class _SignUpState extends State<SignUp> with SingleTickerProviderStateMixin {
         ),
         prefixIcon: Icon(icon, color: const Color(0xFF2C4A7C), size: 22),
         suffixIcon: isPass
-            ? const Icon(Icons.visibility_outlined, 
+            ? const Icon(Icons.visibility_outlined,
                 color: Color(0xFF2C4A7C), size: 22)
             : null,
         filled: true,

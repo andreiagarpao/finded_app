@@ -85,176 +85,242 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildInquiriesView() {
-    // DEBUG: Print service info
-    print('🎯 ========== ADMIN DASHBOARD BUILDING ==========');
-    print('🎯 Admin Dashboard - Service instance check:');
-    _service.debugPrintInstance();
-    
-    // Get filtered inquiries from service - ONLY for the selected school
-    final filteredInquiries = _service.getInquiriesBySchool(widget.selectedSchool);
-    final stats = _service.getStatistics(school: widget.selectedSchool);
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _loadInquiriesData(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Color(0xFF2C4A7C),
+            ),
+          );
+        }
 
-    print('📋 Displaying ${filteredInquiries.length} inquiries for ${widget.selectedSchool}');
-    print('🎯 ========== ADMIN DASHBOARD BUILD COMPLETE ==========');
-
-    return Column(
-      children: [
-        // Stats Cards (NO DROPDOWN)
-        Container(
-          color: const Color(0xFF2C4A7C),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          child: Column(
-            children: [
-              // School Name Display (NO DROPDOWN)
-              Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                    width: 1,
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.red[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading data',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.school,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      widget.selectedSchool,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                const SizedBox(height: 8),
+                Text(
+                  snapshot.error.toString(),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[500],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {});
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (!snapshot.hasData) {
+          return const Center(child: Text('No data available'));
+        }
+
+        final data = snapshot.data!;
+        final filteredInquiries = data['inquiries'] as List<StudentInquiry>;
+        final stats = data['stats'] as Map<String, int>;
+
+        print('📋 Displaying ${filteredInquiries.length} inquiries for ${widget.selectedSchool}');
+
+        return Column(
+          children: [
+            // Stats Cards (NO DROPDOWN)
+            Container(
+              color: const Color(0xFF2C4A7C),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              child: Column(
+                children: [
+                  // School Name Display (NO DROPDOWN)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1,
                       ),
                     ),
-                  ],
-                ),
-              ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.school,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.selectedSchool,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
-              // Stats Row
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      'Total',
-                      stats['total'].toString(),
-                      Icons.inbox,
-                      const Color(0xFFFFC107),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatCard(
-                      'Pending',
-                      stats['pending'].toString(),
-                      Icons.pending_outlined,
-                      Colors.orange,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatCard(
-                      'Responded',
-                      stats['responded'].toString(),
-                      Icons.check_circle_outline,
-                      Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        // Inquiries List Header
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Recent Inquiries',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2C4A7C),
-                    ),
-                  ),
-                  Text(
-                    'Showing ${widget.selectedSchool} only',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-              TextButton.icon(
-                onPressed: () {
-                  // Refresh the list
-                  setState(() {});
-                },
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Refresh'),
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF2C4A7C),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Inquiries List
-        Expanded(
-          child: filteredInquiries.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  // Stats Row
+                  Row(
                     children: [
-                      Icon(
-                        Icons.inbox_outlined,
-                        size: 64,
-                        color: Colors.grey[400],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No inquiries found',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
+                      Expanded(
+                        child: _buildStatCard(
+                          'Total',
+                          stats['total'].toString(),
+                          Icons.inbox,
+                          const Color(0xFFFFC107),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'No inquiries from ${widget.selectedSchool}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[500],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          'Pending',
+                          stats['pending'].toString(),
+                          Icons.pending_outlined,
+                          Colors.orange,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          'Responded',
+                          stats['responded'].toString(),
+                          Icons.check_circle_outline,
+                          Colors.green,
                         ),
                       ),
                     ],
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: filteredInquiries.length,
-                  itemBuilder: (context, index) {
-                    return _buildInquiryCard(filteredInquiries[index]);
-                  },
-                ),
-        ),
-      ],
+                ],
+              ),
+            ),
+
+            // Inquiries List Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Recent Inquiries',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2C4A7C),
+                        ),
+                      ),
+                      Text(
+                        'Showing ${widget.selectedSchool} only',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                  TextButton.icon(
+                    onPressed: () {
+                      // Refresh the list
+                      setState(() {});
+                    },
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('Refresh'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF2C4A7C),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Inquiries List
+            Expanded(
+              child: filteredInquiries.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inbox_outlined,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No inquiries found',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'No inquiries from ${widget.selectedSchool}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: filteredInquiries.length,
+                      itemBuilder: (context, index) {
+                        return _buildInquiryCard(filteredInquiries[index]);
+                      },
+                    ),
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  // New method to load both inquiries and stats
+  Future<Map<String, dynamic>> _loadInquiriesData() async {
+    print('🎯 ========== LOADING ADMIN DASHBOARD DATA ==========');
+    print('🎯 Loading data for school: ${widget.selectedSchool}');
+
+    final inquiries = await _service.getInquiriesBySchool(widget.selectedSchool);
+    final stats = await _service.getStatistics(school: widget.selectedSchool);
+
+    print('🎯 ========== DATA LOAD COMPLETE ==========');
+
+    return {
+      'inquiries': inquiries,
+      'stats': stats,
+    };
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
@@ -575,14 +641,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
         actions: [
           if (inquiry.status == 'Pending')
             TextButton(
-              onPressed: () {
-                setState(() {
-                  _service.updateInquiryStatus(inquiry.id, 'Responded');
-                });
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Marked as Responded')),
-                );
+              onPressed: () async {
+                try {
+                  await _service.updateInquiryStatus(inquiry.id, 'Responded');
+                  setState(() {}); // Refresh the view
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Marked as Responded')),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error updating status: $e')),
+                    );
+                  }
+                }
               },
               child: const Text('Mark as Responded'),
             ),
